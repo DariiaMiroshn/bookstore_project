@@ -1,0 +1,174 @@
+# Translation of bookstore project into Ukrainian.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-26 20:30+0000\n"
+"PO-Revision-Date: 2026-10-26 20:45+0000\n"
+"Last-Translator: Dariia Miroshnychenko\n"
+"Language-Team: Ukrainian\n"
+"Language: uk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != "
+"11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % "
+"100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || "
+"(n % 100 >=11 && n % 100 <=14 )) ? 2: 3);\n"
+
+#: bookstore/settings.py:132
+msgid "English"
+msgstr "Англійська"
+
+#: bookstore/settings.py:133
+msgid "Ukrainian"
+msgstr "Українська"
+
+#: store/models.py:7
+msgid "Category name"
+msgstr "Назва категорії"
+
+#: store/models.py:8
+msgid "URL-slug"
+msgstr "URL-слаг"
+
+#: store/models.py:11 store/models.py:29
+msgid "Category"
+msgstr "Категорія"
+
+#: store/models.py:12
+msgid "Categories"
+msgstr "Категорії"
+
+#: store/models.py:19
+msgid "Title"
+msgstr "Назва"
+
+#: store/models.py:20
+msgid "Author"
+msgstr "Автор"
+
+#: store/models.py:21 store/models.py:89
+msgid "Price"
+msgstr "Ціна"
+
+#: store/models.py:22
+msgid "Description"
+msgstr "Опис"
+
+#: store/models.py:23
+msgid "Stock quantity"
+msgstr "Кількість на складі"
+
+#: store/models.py:33 store/models.py:87
+msgid "Book"
+msgstr "Книга"
+
+#: store/models.py:34
+msgid "Books"
+msgstr "Книги"
+
+#: store/models.py:42
+msgid "Pending"
+msgstr "В очікуванні"
+
+#: store/models.py:43
+msgid "Paid"
+msgstr "Оплачено"
+
+#: store/models.py:44
+msgid "Canceled"
+msgstr "Скасовано"
+
+#: store/models.py:51
+msgid "User"
+msgstr "Користувач"
+
+#: store/models.py:53
+msgid "First Name"
+msgstr "Ім'я"
+
+#: store/models.py:54
+msgid "Last Name"
+msgstr "Прізвище"
+
+#: store/models.py:55
+msgid "Email"
+msgstr "Електронна пошта"
+
+#: store/models.py:56
+msgid "Address"
+msgstr "Адреса"
+
+#: store/models.py:57
+msgid "Postal Code"
+msgstr "Поштовий індекс"
+
+#: store/models.py:58
+msgid "City"
+msgstr "Місто"
+
+#: store/models.py:59
+msgid "Created At"
+msgstr "Створено"
+
+#: store/models.py:60
+msgid "Updated At"
+msgstr "Оновлено"
+
+#: store/models.py:61
+msgid "Status"
+msgstr "Статус"
+
+#: store/models.py:62
+msgid "Stripe Session ID"
+msgstr "ID сесії Stripe"
+
+#: store/models.py:66 store/models.py:81
+msgid "Order"
+msgstr "Замовлення"
+
+#: store/models.py:67
+msgid "Orders"
+msgstr "Замовлення"
+
+#: store/models.py:90
+msgid "Quantity"
+msgstr "Кількість"
+
+#: store/models.py:93
+msgid "Order Item"
+msgstr "Позиція замовлення"
+
+#: store/models.py:94
+msgid "Order Items"
+msgstr "Позиції замовлення"
+
+#: store/templates/store/base.html:15
+msgid "Catalog"
+msgstr "Каталог"
+
+#: store/templates/store/base.html:16
+msgid "Cart"
+msgstr "Кошик"
+
+#: store/templates/store/base.html:18
+msgid "Add Book"
+msgstr "Додати книгу"
+
+#: store/templates/store/base.html:39
+msgid "Hello"
+msgstr "Привіт"
+
+#: store/templates/store/base.html:42
+msgid "Log Out"
+msgstr "Вийти"
+
+#: store/templates/store/base.html:45
+msgid "Log In"
+msgstr "Увійти"
+
+#: store/templates/store/base.html:46
+msgid "Register"
+msgstr "Реєстрація"

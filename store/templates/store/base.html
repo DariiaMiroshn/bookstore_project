@@ -1,5 +1,6 @@
+{% load i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}BookStore{% endblock %}</title>
@@ -11,23 +12,38 @@
         <a class="navbar-brand fw-bold" href="{% url 'store:book_list' %}">BookStore</a>
 
         <div class="navbar-nav me-auto">
-            <a class="nav-link text-white" href="{% url 'store:book_list' %}">Catalog</a>
-                <a class="nav-link text-white" href="{% url 'store:cart_detail' %}">Cart</a>
-                {% if perms.store.add_book %}
-                    <a class="nav-link text-white" href="{% url 'store:book_create' %}">+ Add Book</a>
-                {% endif %}
+            <a class="nav-link text-white" href="{% url 'store:book_list' %}">{% trans "Catalog" %}</a>
+            <a class="nav-link text-white" href="{% url 'store:cart_detail' %}">{% trans "Cart" %}</a>
+            {% if perms.store.add_book %}
+                <a class="nav-link text-white" href="{% url 'store:book_create' %}">+ {% trans "Add Book" %}</a>
+            {% endif %}
         </div>
+
+        <!-- Перемикач мов (EN / UK) -->
+        <form action="{% url 'set_language' %}" method="post" class="d-flex align-items-center me-3 my-0">
+            {% csrf_token %}
+            <input name="next" type="hidden" value="{{ request.get_full_path }}">
+            <select name="language" class="form-select form-select-sm bg-light" style="width: auto;" onchange="this.form.submit()">
+                {% get_current_language as CURRENT_LANGUAGE %}
+                {% get_available_languages as AVAILABLE_LANGUAGES %}
+                {% for lang_code, lang_name in AVAILABLE_LANGUAGES %}
+                    <option value="{{ lang_code }}" {% if lang_code == CURRENT_LANGUAGE %}selected{% endif %}>
+                        {{ lang_code|upper }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
 
         <div class="navbar-nav">
             {% if user.is_authenticated %}
-                <span class="nav-link text-white me-2">Hello, <strong>{{ user.username }}</strong>!</span>
+                <span class="nav-link text-white me-2">{% trans "Hello" %}, <strong>{{ user.username }}</strong>!</span>
                 <form method="post" action="{% url 'users:logout' %}" class="d-inline">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-light btn-sm">Log Out</button>
+                    <button type="submit" class="btn btn-outline-light btn-sm">{% trans "Log Out" %}</button>
                 </form>
             {% else %}
-                <a class="nav-link text-white" href="{% url 'users:login' %}">Log In</a>
-                <a class="btn btn-light btn-sm ms-2" href="{% url 'users:register' %}">Register</a>
+                <a class="nav-link text-white" href="{% url 'users:login' %}">{% trans "Log In" %}</a>
+                <a class="btn btn-light btn-sm ms-2" href="{% url 'users:register' %}">{% trans "Register" %}</a>
             {% endif %}
         </div>
     </nav>

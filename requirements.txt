@@ -3,3 +3,7 @@ psycopg2-binary>=2.9.9
 python-dotenv>=1.0.1
 django-debug-toolbar>=4.3.0
 stripe>=16.0.0
+pytest
+pytest-django
+pytest-cov
+factory-boy
