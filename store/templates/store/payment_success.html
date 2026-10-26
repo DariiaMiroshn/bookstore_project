@@ -1,0 +1,9 @@
+{% extends 'store/base.html' %}
+
+{% block content %}
+<h2>Payment Successful!</h2>
+<p>Thank you for your purchase. Your order <strong>#{{ order_id }}</strong> has been confirmed and paid successfully.</p>
+<p>A confirmation email with your order summary has been sent to your email address.</p>
+<br>
+<p><a href="{% url 'store:book_list' %}">&larr; Back to Catalog</a></p>
+{% endblock %}

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Book
+from .models import Category, Book, Order, OrderItem
 
 
 class BookInline(admin.TabularInline):
@@ -21,3 +21,15 @@ class BookAdmin(admin.ModelAdmin):
     list_filter = ('category',)  # Фільтрація за категорією у правому меню
     search_fields = ('title', 'author')  # Пошук за назвою та автором
     list_editable = ('price', 'stock')  # Швидке редагування ціни та залишків зі списку
+
+
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    raw_id_fields = ['book']
+    extra = 0
+
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'first_name', 'last_name', 'email', 'status', 'created_at', 'get_total_cost']
+    list_filter = ['status', 'created_at']
+    inlines = [OrderItemInline]

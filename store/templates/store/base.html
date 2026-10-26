@@ -12,9 +12,10 @@
 
         <div class="navbar-nav me-auto">
             <a class="nav-link text-white" href="{% url 'store:book_list' %}">Catalog</a>
-            {% if perms.store.add_book %}
-                <a class="nav-link text-white" href="{% url 'store:book_create' %}">+ Add Book</a>
-            {% endif %}
+                <a class="nav-link text-white" href="{% url 'store:cart_detail' %}">Cart</a>
+                {% if perms.store.add_book %}
+                    <a class="nav-link text-white" href="{% url 'store:book_create' %}">+ Add Book</a>
+                {% endif %}
         </div>
 
         <div class="navbar-nav">

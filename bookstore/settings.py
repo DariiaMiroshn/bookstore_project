@@ -131,6 +131,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 AUTH_USER_MODEL = 'users.User'
 
@@ -175,4 +176,15 @@ INTERNAL_IPS = [
 ]
 
 LOGIN_REDIRECT_URL = 'store:book_list'
+LOGIN_URL = 'users:login'
 LOGOUT_REDIRECT_URL = 'store:book_list'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Stripe
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', 'sk_test_placeholder')
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'pk_test_placeholder')
+
+# Email (вивід у консоль для перевірки виконання ДЗ)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'orders@bookstore.com'

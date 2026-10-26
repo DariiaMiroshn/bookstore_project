@@ -1,0 +1,9 @@
+{% extends 'store/base.html' %}
+
+{% block content %}
+<h2>Payment Canceled</h2>
+<p>Your payment session was canceled. Your order was not processed, and no charges were made.</p>
+<br>
+<p><a href="{% url 'store:cart_detail' %}">Return to Shopping Cart</a></p>
+<p><a href="{% url 'store:book_list' %}">&larr; Back to Catalog</a></p>
+{% endblock %}

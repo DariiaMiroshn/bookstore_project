@@ -1,0 +1,39 @@
+{% extends 'store/base.html' %}
+
+{% block content %}
+<h2>Checkout & Order Details</h2>
+<p>Order Total: <strong>${{ cart.get_total_price }}</strong></p>
+
+<form method="post">
+  {% csrf_token %}
+  <div style="margin-bottom: 12px;">
+    <label for="id_first_name">First Name:</label><br>
+    <input type="text" id="id_first_name" name="first_name" value="{{ user.first_name }}" required>
+  </div>
+  <div style="margin-bottom: 12px;">
+    <label for="id_last_name">Last Name:</label><br>
+    <input type="text" id="id_last_name" name="last_name" value="{{ user.last_name }}" required>
+  </div>
+  <div style="margin-bottom: 12px;">
+    <label for="id_email">Email Address:</label><br>
+    <input type="email" id="id_email" name="email" value="{{ user.email }}" required>
+  </div>
+  <div style="margin-bottom: 12px;">
+    <label for="id_address">Delivery Address:</label><br>
+    <input type="text" id="id_address" name="address" placeholder="123 Main St" required>
+  </div>
+  <div style="margin-bottom: 12px;">
+    <label for="id_postal_code">Postal / ZIP Code:</label><br>
+    <input type="text" id="id_postal_code" name="postal_code" placeholder="78701" required>
+  </div>
+  <div style="margin-bottom: 12px;">
+    <label for="id_city">City:</label><br>
+    <input type="text" id="id_city" name="city" placeholder="Austin" required>
+  </div>
+  <br>
+  <button type="submit">Place Order & Pay with Stripe</button>
+</form>
+
+<br>
+<p><a href="{% url 'store:cart_detail' %}">&larr; Return to Cart</a></p>
+{% endblock %}
