@@ -24,13 +24,19 @@ a_render = sync_to_async(render)
 # --- 1. Async views з асинхронними запитами до БД ---
 
 async def async_book_list(request):
-    """1. Async view для списку всіх книг"""
+    """
+    Асинхронне відображення списку всіх книг.
+    Використовує асинхронний генератор списку для неблокуючого читання з БД.
+    """
     books = [book async for book in Book.objects.all()]
     return await a_render(request, 'store/book_list.html', {'books': books})
 
 
 async def async_book_detail(request, book_id):
-    """2. Async view для детальної сторінки книги"""
+    """
+    Асинхронне відображення детальної інформації про книгу.
+    Отримує об'єкт через aget() або генерує виняток Http404.
+    """
     try:
         book = await Book.objects.aget(id=book_id)
     except Book.DoesNotExist:
@@ -39,7 +45,10 @@ async def async_book_detail(request, book_id):
 
 
 async def async_category_books(request, category_slug):
-    """3. Async view для фільтрації книг за категорією"""
+    """
+    Асинхронне відображення списку книг, відфільтрованих за категорією.
+    Отримує категорію за slug через aget() та повертає відповідні книги.
+    """
     try:
         category = await Category.objects.aget(slug=category_slug)
     except Category.DoesNotExist:
@@ -52,6 +61,7 @@ async def async_category_books(request, category_slug):
 # --- 2. Стандартні CRUD views (Class-Based) ---
 
 class BookListView(ListView):
+    """Публічний каталог книг із пагінацією по 4 записи на сторінку."""
     model = Book
     template_name = 'store/book_list.html'
     context_object_name = 'books'
@@ -59,12 +69,14 @@ class BookListView(ListView):
 
 
 class BookDetailView(DetailView):
+    """Детальна сторінка перегляду інформації про конкретну книгу."""
     model = Book
     template_name = 'store/book_detail.html'
     context_object_name = 'book'
 
 
 class BookCreateView(PermissionRequiredMixin, CreateView):
+    """Форма додавання нової книги (доступ лише з дозволом store.add_book)."""
     model = Book
     template_name = 'store/book_form.html'
     fields = ['title', 'author', 'category', 'price', 'description', 'stock']
@@ -73,6 +85,7 @@ class BookCreateView(PermissionRequiredMixin, CreateView):
 
 
 class BookUpdateView(PermissionRequiredMixin, UpdateView):
+    """Форма редагування книги (доступ лише з дозволом store.change_book)."""
     model = Book
     template_name = 'store/book_form.html'
     fields = ['title', 'author', 'category', 'price', 'description', 'stock']
@@ -81,6 +94,7 @@ class BookUpdateView(PermissionRequiredMixin, UpdateView):
 
 
 class BookDeleteView(PermissionRequiredMixin, DeleteView):
+    """Сторінка видалення книги (доступ лише з дозволом store.delete_book)."""
     model = Book
     template_name = 'store/book_confirm_delete.html'
     success_url = reverse_lazy('store:book_list')
@@ -91,6 +105,7 @@ class BookDeleteView(PermissionRequiredMixin, DeleteView):
 
 @require_POST
 def cart_add(request, book_id):
+    """Додавання книги до сесійного кошика покупця."""
     cart = Cart(request)
     book = get_object_or_404(Book, id=book_id)
     cart.add(book=book, quantity=1)
@@ -99,6 +114,7 @@ def cart_add(request, book_id):
 
 @require_POST
 def cart_remove(request, book_id):
+    """Видалення вказаної книги із сесійного кошика."""
     cart = Cart(request)
     book = get_object_or_404(Book, id=book_id)
     cart.remove(book)
@@ -106,6 +122,7 @@ def cart_remove(request, book_id):
 
 
 def cart_detail(request):
+    """Відображення сторінки з поточним вмістом кошика."""
     cart = Cart(request)
     return render(request, 'store/cart_detail.html', {'cart': cart})
 
@@ -114,6 +131,12 @@ def cart_detail(request):
 
 @login_required
 def order_create(request):
+    """
+    Оформлення замовлення:
+    валідація обов'язкових полів адреси, перевірка залишків на складі,
+    збереження замовлення в атомарній транзакції, створення сесії Stripe Checkout
+    та надсилання підтвердження на email.
+    """
     cart = Cart(request)
     if len(cart) == 0:
         return redirect('store:book_list')
@@ -211,6 +234,7 @@ def order_create(request):
 
 
 def payment_success(request):
+    """Обробка успішної оплати через Stripe та оновлення статусу замовлення на 'paid'."""
     order_id = request.GET.get('order_id')
     if order_id:
         order = get_object_or_404(Order, id=order_id)
@@ -220,4 +244,5 @@ def payment_success(request):
 
 
 def payment_cancel(request):
+    """Сторінка скасування оплати користувачем."""
     return render(request, 'store/payment_cancel.html')
