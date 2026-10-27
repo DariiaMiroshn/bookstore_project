@@ -48,9 +48,15 @@ INSTALLED_APPS = [
     'debug_toolbar',
     'store.apps.StoreConfig',
     'users.apps.UsersConfig',
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'django_filters',
+    'corsheaders',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -199,3 +205,59 @@ STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'pk_test_placeholde
 # Email (вивід у консоль для перевірки виконання ДЗ)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'orders@bookstore.com'
+
+
+
+# REST FRAMEWORK & API CONFIGURATION
+
+REST_FRAMEWORK = {
+    # JWT Authentication
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    # Default Permissions: allow reading by default
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+    # Pagination: exactly 20 items per page as required
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    # Filtering backends
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    # Throttling rate limits
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day',
+        'user': '1000/day',
+    },
+    # OpenAPI 3.0 schema generation
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# SimpleJWT configuration
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = True  # Для навчального середовища дозволяємо запити з будь-якого фронтенду
+
+# Spectacular API Docs settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Bookstore E-commerce REST API',
+    'DESCRIPTION': 'REST API for Bookstore with JWT authentication, books, orders, and cart management',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
