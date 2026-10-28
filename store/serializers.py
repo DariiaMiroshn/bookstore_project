@@ -15,7 +15,6 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class BookSerializer(serializers.ModelSerializer):
-
     """Основний серіалізатор для книг.Включає вкладену категорію для
     читання (nested)та очікує category_id при створенні/редагуванні."""
 
