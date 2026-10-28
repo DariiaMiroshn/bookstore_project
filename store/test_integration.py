@@ -11,12 +11,12 @@ class TestIntegrationUserFlows:
 
     def test_flow_registration_and_login(self, client):
         # 1. Повний цикл реєстрації
-        reg_url = reverse('users:register')
+        reg_url = reverse("users:register")
         reg_data = {
-            'username': 'newflowuser',
-            'email': 'flow@example.com',
-            'password': 'ValidPassword123!',
-            'password2': 'ValidPassword123!',
+            "username": "newflowuser",
+            "email": "flow@example.com",
+            "password": "ValidPassword123!",
+            "password2": "ValidPassword123!",
         }
         res = client.post(reg_url, reg_data)
         assert res.status_code in (302, 200)
@@ -24,43 +24,43 @@ class TestIntegrationUserFlows:
     def test_flow_add_to_cart_and_view(self, client):
         # 2. Додавання книги до кошика
         book = BookFactory(stock=5)
-        add_url = reverse('store:cart_add', kwargs={'book_id': book.id})
+        add_url = reverse("store:cart_add", kwargs={"book_id": book.id})
         res = client.post(add_url)
         assert res.status_code == 302
 
         # 3. Перевірка наявності книги в кошику
-        cart_res = client.get(reverse('store:cart_detail'))
+        cart_res = client.get(reverse("store:cart_detail"))
         assert cart_res.status_code == 200
         assert book.title.encode() in cart_res.content
 
     def test_flow_remove_from_cart(self, client):
         # 4. Видалення з кошика
         book = BookFactory()
-        client.post(reverse('store:cart_add', kwargs={'book_id': book.id}))
-        del_res = client.post(reverse('store:cart_remove', kwargs={'book_id': book.id}))
+        client.post(reverse("store:cart_add", kwargs={"book_id": book.id}))
+        del_res = client.post(reverse("store:cart_remove", kwargs={"book_id": book.id}))
         assert del_res.status_code == 302
 
     def test_flow_checkout_redirects_anonymous_user(self, client):
         # 5. Анонімний користувач перенаправляється на логін
-        res = client.get(reverse('store:order_create'))
+        res = client.get(reverse("store:order_create"))
         assert res.status_code == 302
-        assert '/login' in res.url
+        assert "/login" in res.url
 
     def test_flow_checkout_empty_cart_redirects(self, client):
         # 6. Спроба оформити порожній кошик повертає до каталогу
         user = UserFactory()
         client.force_login(user)
-        res = client.get(reverse('store:order_create'))
+        res = client.get(reverse("store:order_create"))
         assert res.status_code == 302
-        assert res.url == reverse('store:book_list')
+        assert res.url == reverse("store:book_list")
 
-    @patch('store.views.stripe.checkout.Session.create')
-    @patch('store.views.send_mail')
+    @patch("store.views.stripe.checkout.Session.create")
+    @patch("store.views.send_mail")
     def test_flow_full_successful_order(self, mock_send_mail, mock_stripe, client):
         # 7-11. Повний E2E цикл: книга -> кошик -> оформлення -> Stripe mock -> Email mock
         mock_session = MagicMock()
-        mock_session.id = 'cs_mock_123'
-        mock_session.url = 'https://checkout.stripe.com/pay/cs_mock_123'
+        mock_session.id = "cs_mock_123"
+        mock_session.url = "https://checkout.stripe.com/pay/cs_mock_123"
         mock_stripe.return_value = mock_session
         mock_send_mail.return_value = 1
 
@@ -69,22 +69,22 @@ class TestIntegrationUserFlows:
         client.force_login(user)
 
         # Додавання до кошика
-        client.post(reverse('store:cart_add', kwargs={'book_id': book.id}))
+        client.post(reverse("store:cart_add", kwargs={"book_id": book.id}))
 
         # Відправка форми замовлення
         order_data = {
-            'first_name': 'Dariia',
-            'last_name': 'Miro',
-            'email': 'dariia@test.com',
-            'address': 'Main Street 10',
-            'postal_code': '78701',
-            'city': 'Austin',
+            "first_name": "Dariia",
+            "last_name": "Miro",
+            "email": "dariia@test.com",
+            "address": "Main Street 10",
+            "postal_code": "78701",
+            "city": "Austin",
         }
-        res = client.post(reverse('store:order_create'), order_data)
+        res = client.post(reverse("store:order_create"), order_data)
 
         # Перевірка редіректу
         assert res.status_code in (302, 303)
-        assert 'stripe.com' in res.url
+        assert "stripe.com" in res.url
 
         # Перевірка зменшення залишку товару
         book.refresh_from_db()
@@ -92,7 +92,7 @@ class TestIntegrationUserFlows:
 
         # Перевірка замовлення в базі даних
         order = Order.objects.get(user=user)
-        assert order.stripe_session_id == 'cs_mock_123'
+        assert order.stripe_session_id == "cs_mock_123"
 
     def test_flow_order_insufficient_stock(self, client):
         # 12. Неможливість замовити товар при нульовому залишку
@@ -100,16 +100,16 @@ class TestIntegrationUserFlows:
         book = BookFactory(stock=0)
         client.force_login(user)
 
-        client.post(reverse('store:cart_add', kwargs={'book_id': book.id}))
+        client.post(reverse("store:cart_add", kwargs={"book_id": book.id}))
         order_data = {
-            'first_name': 'Dariia',
-            'last_name': 'Miro',
-            'email': 'dariia@test.com',
-            'address': 'Main Street 10',
-            'postal_code': '78701',
-            'city': 'Austin',
+            "first_name": "Dariia",
+            "last_name": "Miro",
+            "email": "dariia@test.com",
+            "address": "Main Street 10",
+            "postal_code": "78701",
+            "city": "Austin",
         }
-        res = client.post(reverse('store:order_create'), order_data)
+        res = client.post(reverse("store:order_create"), order_data)
         assert res.status_code == 200
         assert Order.objects.count() == 0
 
@@ -118,22 +118,25 @@ class TestIntegrationUserFlows:
         user = UserFactory()
         book = BookFactory(stock=5)
         client.force_login(user)
-        client.post(reverse('store:cart_add', kwargs={'book_id': book.id}))
+        client.post(reverse("store:cart_add", kwargs={"book_id": book.id}))
 
-        res = client.post(reverse('store:order_create'), {'first_name': 'Dariia'})
+        res = client.post(reverse("store:order_create"), {"first_name": "Dariia"})
         assert res.status_code == 200
         assert Order.objects.count() == 0
 
     def test_flow_payment_success_lifecycle(self, client):
         # 14. Успішна обробка повернення з платіжної системи
-        order = OrderFactory(status='pending')
+        order = OrderFactory(status="pending")
         res = client.get(f"{reverse('store:payment_success')}?order_id={order.id}")
         assert res.status_code == 200
         order.refresh_from_db()
-        assert order.status == 'paid'
+        assert order.status == "paid"
 
     def test_flow_i18n_set_language_redirect(self, client):
         # 15. Перемикання мови через POST-запит
-        res = client.post(reverse('set_language'), {'language': 'uk', 'next': reverse('store:book_list')})
+        res = client.post(
+            reverse("set_language"),
+            {"language": "uk", "next": reverse("store:book_list")},
+        )
         assert res.status_code == 302
-        assert client.cookies.get('django_language').value == 'uk'
+        assert client.cookies.get("django_language").value == "uk"

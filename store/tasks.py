@@ -27,7 +27,7 @@ def send_order_confirmation_email_task(order_id):
         send_mail(
             subject=subject,
             message=message,
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@bookstore.com'),
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@bookstore.com"),
             recipient_list=[order.email],
             fail_silently=False,
         )
@@ -44,7 +44,7 @@ def clear_expired_sessions_task():
     Періодична задача для очищення застарілих сесій Django.
     """
     logger.info("Starting clearing expired sessions...")
-    call_command('clearsessions')
+    call_command("clearsessions")
     logger.info("Expired sessions cleared successfully.")
     return "Expired sessions cleared"
 

@@ -2,7 +2,13 @@ from unittest.mock import patch
 import pytest
 from django.urls import reverse
 from store.models import Category, Book, Order, OrderItem
-from store.factories import UserFactory, CategoryFactory, BookFactory, OrderFactory, OrderItemFactory
+from store.factories import (
+    UserFactory,
+    CategoryFactory,
+    BookFactory,
+    OrderFactory,
+    OrderItemFactory,
+)
 
 
 @pytest.mark.django_db
@@ -41,7 +47,7 @@ class TestUnitModels:
             title="Clean Code",
             author="Uncle Bob",
             price=30.00,
-            category=CategoryFactory()
+            category=CategoryFactory(),
         )
         assert book.stock == 0
 
@@ -77,57 +83,67 @@ class TestUnitViews:
     """Unit-тести стандартних та async views (13-24)"""
 
     def test_book_list_view_status(self, client):
-        response = client.get(reverse('store:book_list'))
+        response = client.get(reverse("store:book_list"))
         assert response.status_code == 200
 
     def test_book_detail_view_status(self, client):
         book = BookFactory()
-        response = client.get(reverse('store:book_detail', kwargs={'pk': book.pk}))
+        response = client.get(reverse("store:book_detail", kwargs={"pk": book.pk}))
         assert response.status_code == 200
 
     def test_book_detail_404(self, client):
-        response = client.get(reverse('store:book_detail', kwargs={'pk': 9999}))
+        response = client.get(reverse("store:book_detail", kwargs={"pk": 9999}))
         assert response.status_code == 404
 
     def test_cart_detail_view_status(self, client):
-        response = client.get(reverse('store:cart_detail'))
+        response = client.get(reverse("store:cart_detail"))
         assert response.status_code == 200
 
     def test_payment_cancel_view_status(self, client):
-        response = client.get(reverse('store:payment_cancel'))
+        response = client.get(reverse("store:payment_cancel"))
         assert response.status_code == 200
 
     def test_payment_success_without_order(self, client):
-        response = client.get(reverse('store:payment_success'))
+        response = client.get(reverse("store:payment_success"))
         assert response.status_code == 200
 
     def test_payment_success_marks_order_paid(self, client):
-        order = OrderFactory(status='pending')
+        order = OrderFactory(status="pending")
         response = client.get(f"{reverse('store:payment_success')}?order_id={order.id}")
         assert response.status_code == 200
         order.refresh_from_db()
-        assert order.status == 'paid'
+        assert order.status == "paid"
 
     def test_async_book_list_status(self, client):
         BookFactory.create_batch(2)
-        response = client.get(reverse('store:async_book_list'))
+        response = client.get(reverse("store:async_book_list"))
         assert response.status_code == 200
 
     def test_async_book_detail_status(self, client):
         book = BookFactory()
-        response = client.get(reverse('store:async_book_detail', kwargs={'book_id': book.id}))
+        response = client.get(
+            reverse("store:async_book_detail", kwargs={"book_id": book.id})
+        )
         assert response.status_code == 200
 
     def test_async_book_detail_404(self, client):
-        response = client.get(reverse('store:async_book_detail', kwargs={'book_id': 9999}))
+        response = client.get(
+            reverse("store:async_book_detail", kwargs={"book_id": 9999})
+        )
         assert response.status_code == 404
 
     def test_async_category_books_status(self, client):
         cat = CategoryFactory(slug="science")
         BookFactory(category=cat)
-        response = client.get(reverse('store:async_category_books', kwargs={'category_slug': 'science'}))
+        response = client.get(
+            reverse("store:async_category_books", kwargs={"category_slug": "science"})
+        )
         assert response.status_code == 200
 
     def test_async_category_books_404(self, client):
-        response = client.get(reverse('store:async_category_books', kwargs={'category_slug': 'missing-slug'}))
+        response = client.get(
+            reverse(
+                "store:async_category_books", kwargs={"category_slug": "missing-slug"}
+            )
+        )
         assert response.status_code == 404

@@ -14,6 +14,8 @@ class RequestTimeLoggingMiddleware:
         response = self.get_response(request)
 
         duration = time.time() - start_time
-        logger.info(f"Path: {request.path} | Method: {request.method} | Duration: {duration:.4f}s")
+        logger.info(
+            f"Path: {request.path} | Method: {request.method} | Duration: {duration:.4f}s"
+        )
 
         return response

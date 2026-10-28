@@ -14,7 +14,7 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 
         # Запис, редагування або видалення дозволено лише власнику об'єкта
         # Якщо у моделі є пряме поле 'user'
-        if hasattr(obj, 'user'):
+        if hasattr(obj, "user"):
             return obj.user == request.user
 
         return False

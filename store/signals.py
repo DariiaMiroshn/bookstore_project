@@ -16,7 +16,7 @@ def invalidate_book_cache(sender, instance, **kwargs):
     cache_key = f"book_detail_{instance.id}"
     cache.delete(cache_key)
     # Також очищаємо загальні ключі списків книг
-    cache.delete('books_list_cache')
+    cache.delete("books_list_cache")
     logger.info(f"Invalidated cache for book id={instance.id} (key: {cache_key})")
 
 
@@ -25,5 +25,5 @@ def invalidate_category_cache(sender, instance, **kwargs):
     """
     Інвалідація кешу категорій при створенні/зміні/видаленні.
     """
-    cache.delete('categories_all_cache')
+    cache.delete("categories_all_cache")
     logger.info(f"Invalidated cache for category id={instance.id}")

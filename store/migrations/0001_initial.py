@@ -8,36 +8,75 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Category',
+            name="Category",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100, verbose_name='Category name')),
-                ('slug', models.SlugField(unique=True, verbose_name='URL-slug')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(max_length=100, verbose_name="Category name"),
+                ),
+                ("slug", models.SlugField(unique=True, verbose_name="URL-slug")),
             ],
             options={
-                'verbose_name': 'Category',
-                'verbose_name_plural': 'Categories',
+                "verbose_name": "Category",
+                "verbose_name_plural": "Categories",
             },
         ),
         migrations.CreateModel(
-            name='Book',
+            name="Book",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=200, verbose_name='Title')),
-                ('author', models.CharField(max_length=100, verbose_name='Author')),
-                ('price', models.DecimalField(decimal_places=2, max_digits=10, verbose_name='Price')),
-                ('description', models.TextField(blank=True, verbose_name='Description')),
-                ('stock', models.PositiveIntegerField(default=0, verbose_name='Stock quantity')),
-                ('category', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='books', to='store.category', verbose_name='Category')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("title", models.CharField(max_length=200, verbose_name="Title")),
+                ("author", models.CharField(max_length=100, verbose_name="Author")),
+                (
+                    "price",
+                    models.DecimalField(
+                        decimal_places=2, max_digits=10, verbose_name="Price"
+                    ),
+                ),
+                (
+                    "description",
+                    models.TextField(blank=True, verbose_name="Description"),
+                ),
+                (
+                    "stock",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Stock quantity"
+                    ),
+                ),
+                (
+                    "category",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="books",
+                        to="store.category",
+                        verbose_name="Category",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Book',
-                'verbose_name_plural': 'Books',
+                "verbose_name": "Book",
+                "verbose_name_plural": "Books",
             },
         ),
     ]
