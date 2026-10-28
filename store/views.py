@@ -4,16 +4,18 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.core.mail import send_mail
+from django.core.cache import cache
 from django.db import transaction
 from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_POST
+from django.core.mail import send_mail
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 
 from .cart import Cart
 from .models import Book, Order, OrderItem, Category
+from .tasks import send_order_confirmation_email_task
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -58,7 +60,7 @@ async def async_category_books(request, category_slug):
     return await a_render(request, 'store/book_list.html', {'books': books, 'category': category})
 
 
-# --- 2. Стандартні CRUD views (Class-Based) ---
+# --- 2. Стандартні CRUD views (Class-Based) з Redis Low-level кешуванням ---
 
 class BookListView(ListView):
     """Публічний каталог книг із пагінацією по 4 записи на сторінку."""
@@ -69,10 +71,24 @@ class BookListView(ListView):
 
 
 class BookDetailView(DetailView):
-    """Детальна сторінка перегляду інформації про конкретну книгу."""
+    """
+    Детальна сторінка книги з Low-level Redis кешуванням на 15 хвилин.
+    """
     model = Book
     template_name = 'store/book_detail.html'
     context_object_name = 'book'
+
+    def get_object(self, queryset=None):
+        book_id = self.kwargs.get(self.pk_url_kwarg or 'pk')
+        cache_key = f"book_detail_{book_id}"
+        cached_book = cache.get(cache_key)
+
+        if cached_book is not None:
+            return cached_book
+
+        book = super().get_object(queryset)
+        cache.set(cache_key, book, timeout=60 * 15)
+        return book
 
 
 class BookCreateView(PermissionRequiredMixin, CreateView):
@@ -127,15 +143,14 @@ def cart_detail(request):
     return render(request, 'store/cart_detail.html', {'cart': cart})
 
 
-# --- 4. Оформлення замовлення, Stripe та Email ---
+# --- 4. Оформлення замовлення, Stripe та асинхронний Celery Email ---
 
 @login_required
 def order_create(request):
     """
     Оформлення замовлення:
-    валідація обов'язкових полів адреси, перевірка залишків на складі,
-    збереження замовлення в атомарній транзакції, створення сесії Stripe Checkout
-    та надсилання підтвердження на email.
+    валідація полів адреси, перевірка на складі, збереження транзакції,
+    створення Stripe сесії та відправка email у фоновій задачі Celery.
     """
     cart = Cart(request)
     if len(cart) == 0:
@@ -210,18 +225,8 @@ def order_create(request):
                 order.stripe_session_id = checkout_session.id
                 order.save()
 
-            send_mail(
-                subject=f"Order #{order.id} Confirmation",
-                message=(
-                    f"Hello {order.first_name},\n\n"
-                    f"Thank you for your order! Your order #{order.id} has been created successfully.\n"
-                    f"Total amount: ${order.get_total_cost()} USD.\n\n"
-                    f"Best regards,\nBookstore Team"
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[order.email],
-                fail_silently=False,
-            )
+            # Асинхронна відправка email через чергу Celery
+            send_order_confirmation_email_task.delay(order.id)
 
             cart.clear()
             return redirect(checkout_session.url, code=303)

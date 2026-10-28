@@ -15,6 +15,10 @@ import os
 from django.utils.translation import gettext_lazy as _
 from pathlib import Path
 from dotenv import load_dotenv
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.celery import CeleryIntegration
+from celery.schedules import crontab
 
 load_dotenv()
 
@@ -53,6 +57,7 @@ INSTALLED_APPS = [
     'django_filters',
     'corsheaders',
     'drf_spectacular',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -261,3 +266,56 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
+
+# REDIS CACHE CONFIGURATION
+
+REDIS_HOST = os.environ.get('REDIS_HOST', 'redis')
+REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
+        'TIMEOUT': 60 * 15,  # 15 хвилин за замовчуванням
+        'KEY_PREFIX': 'bookstore_cache',
+    }
+}
+
+
+# CELERY CONFIGURATION
+
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', f'redis://{REDIS_HOST}:{REDIS_PORT}/0')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', f'redis://{REDIS_HOST}:{REDIS_PORT}/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
+# Розклад для періодичних завдань Celery Beat
+CELERY_BEAT_SCHEDULE = {
+    'clear-expired-sessions-daily': {
+        'task': 'store.tasks.clear_expired_sessions_task',
+        'schedule': crontab(hour=0, minute=0),  # Щодня опівночі
+    },
+    'generate-sales-report-weekly': {
+        'task': 'store.tasks.generate_sales_report_task',
+        'schedule': crontab(day_of_week='mon', hour=6, minute=0),  # Щопонеділка о 06:00
+    },
+}
+
+
+# SENTRY MONITORING CONFIGURATION
+
+SENTRY_DSN = os.environ.get('SENTRY_DSN', '')
+
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(),
+            CeleryIntegration(),
+        ],
+        traces_sample_rate=1.0,
+        send_default_pii=True,
+        environment=os.environ.get('ENVIRONMENT', 'development'),
+    )
