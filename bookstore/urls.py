@@ -32,6 +32,7 @@ router.register(r"cart", CartViewSet, basename="api-cart")
 urlpatterns = [
     # 1. Головна панель адміністратора
     path("admin/", admin.site.urls),
+    path("health/", health_check, name="health_check"),
     # 2. REST API Endpoints
     path("api/", include(router.urls)),
     # 3. JWT Authentication Endpoints (token obtain, refresh, verify)
@@ -49,7 +50,6 @@ urlpatterns = [
     path("users/", include("users.urls", namespace="users")),
     path("i18n/", include("django.conf.urls.i18n")),
     path("", include("store.urls", namespace="store")),
-    path("health/", health_check, name="health_check"),
 ]
 
 # Налаштування для локальної розробки та debug_toolbar
