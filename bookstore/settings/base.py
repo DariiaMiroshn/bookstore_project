@@ -19,7 +19,6 @@ from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
 from celery.schedules import crontab
 from datetime import timedelta
-from django.conf.global_settings import AUTH_USER_MODEL
 
 load_dotenv()
 
