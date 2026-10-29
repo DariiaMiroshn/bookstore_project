@@ -324,3 +324,5 @@ if SENTRY_DSN:
         send_default_pii=True,
         environment=os.environ.get("ENVIRONMENT", "development"),
     )
+
+AUTH_USER_MODEL = "users.User"
