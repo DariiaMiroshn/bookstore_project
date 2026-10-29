@@ -1,5 +1,5 @@
-![Build Status](https://github.com/DariiaMiroshn/bookstore_project/actions/workflows/django.yml/badge.svg)
-![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)
+[![Django CI](https://github.com/DariiaMiroshn/bookstore_project/actions/workflows/django.yml/badge.svg)](https://github.com/DariiaMiroshn/bookstore_project/actions/workflows/django.yml)
+[![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)](https://github.com/DariiaMiroshn/bookstore_project)
 # Bookstore Project (Django)
 
 Веб-додаток книжкового інтернет-магазину на Django з підтримкою асинхронних views, інтернаціоналізації (i18n), інтеграцією платежів через Stripe Checkout, відправкою email та автоматизованим тестуванням через pytest.
