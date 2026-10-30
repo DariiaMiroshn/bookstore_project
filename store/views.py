@@ -1,5 +1,4 @@
 import stripe
-from store.services.warehouse_client import WarehouseClient, WarehouseServiceError
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.contrib import messages
@@ -8,20 +7,20 @@ from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.core.cache import cache
 from django.db import transaction
 from django.http import Http404, JsonResponse
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_POST
-from django.core.mail import send_mail
 from django.views.generic import (
-    ListView,
-    DetailView,
     CreateView,
-    UpdateView,
     DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
 )
 
+from store.services.warehouse_client import WarehouseClient, WarehouseServiceError
 from .cart import Cart
-from .models import Book, Order, OrderItem, Category
+from .models import Book, Category, Order, OrderItem
 from .tasks import send_order_confirmation_email_task
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -258,10 +257,13 @@ def order_create(request):
                         }
                     )
 
-                success_url = request.build_absolute_uri(
-                    reverse("store:payment_success") + f"?order_id={order.id}"
-                )
-                cancel_url = request.build_absolute_uri(reverse("store:payment_cancel"))
+                # Формування зовнішньої адреси редіректу на порт Nginx 8080
+                base_url = request.build_absolute_uri("/").rstrip("/")
+                if ("localhost" in base_url or "127.0.0.1" in base_url) and ":8080" not in base_url:
+                    base_url = "http://127.0.0.1:8080"
+
+                success_url = f"{base_url}{reverse('store:payment_success')}?order_id={order.id}"
+                cancel_url = f"{base_url}{reverse('store:payment_cancel')}"
 
                 checkout_session = stripe.checkout.Session.create(
                     mode="payment",
@@ -279,6 +281,10 @@ def order_create(request):
 
             cart.clear()
             return redirect(checkout_session.url, code=303)
+
+        except stripe.error.StripeError as err:
+            messages.error(request, f"Помилка платіжної системи Stripe: {err}")
+            return render(request, "store/order_create.html", {"cart": cart})
 
         except WarehouseServiceError as err:
             messages.error(request, f"Сервіс складу тимчасово недоступний: {err}")
@@ -300,15 +306,16 @@ def payment_success(request):
             order.status = "paid"
             order.save()
 
-            # Підтверджуємо резервацію на складі
-            warehouse_client = WarehouseClient()
+            # Підтвердження резервацій на складі
             try:
+                warehouse_client = WarehouseClient()
+                # Підтверджуємо резервації безпечно
                 warehouse_client.confirm_reservation(reservation_id=order.id)
-            except WarehouseServiceError as exc:
-                messages.warning(request, f"Помилка синхронізації зі складом: {exc}")
+            except Exception as exc:
+                import logging
+                logging.getLogger(__name__).warning(f"Не вдалося підтвердити резервацію на складі для order {order_id}: {exc}")
 
     return render(request, "store/payment_success.html", {"order_id": order_id})
-
 
 def payment_cancel(request):
     """Обробка скасування оплати: зняття броні зі складу та зміна статусу."""

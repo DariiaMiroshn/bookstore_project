@@ -11,14 +11,14 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
-from django.utils.translation import gettext_lazy as _
+from datetime import timedelta
 from pathlib import Path
+from celery.schedules import crontab
+from django.utils.translation import gettext_lazy as _
 from dotenv import load_dotenv
 import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
-from celery.schedules import crontab
-from datetime import timedelta
+from sentry_sdk.integrations.django import DjangoIntegration
 
 load_dotenv()
 
@@ -36,7 +36,13 @@ SECRET_KEY = "django-insecure-%09237&0gl*v4wky%!ixzelnxmr=0&-gd6s=v0$csu$=60rt)y
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "web", "0.0.0.0"]
+CSRF_TRUSTED_ORIGINS = [
+    "http://127.0.0.1:8080",
+    "http://localhost:8080",
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+]
 
 
 # Application definition
@@ -48,7 +54,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "debug_toolbar",
     "store.apps.StoreConfig",
     "users.apps.UsersConfig",
     "rest_framework",
@@ -61,7 +66,6 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -73,6 +77,14 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "store.middleware.RequestTimeLoggingMiddleware",
 ]
+
+# Безпечне підключення Django Debug Toolbar (якщо встановлено у середовищі)
+try:
+    import debug_toolbar  # noqa: F401
+    INSTALLED_APPS.append("debug_toolbar")
+    MIDDLEWARE.insert(1, "debug_toolbar.middleware.DebugToolbarMiddleware")
+except ImportError:
+    pass
 
 ROOT_URLCONF = "bookstore.urls"
 
@@ -255,9 +267,7 @@ SIMPLE_JWT = {
 }
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = (
-    True  # Для навчального середовища дозволяємо запити з будь-якого фронтенду
-)
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Spectacular API Docs settings
 SPECTACULAR_SETTINGS = {
@@ -327,7 +337,7 @@ if SENTRY_DSN:
 AUTH_USER_MODEL = "users.User"
 
 # Warehouse Service Configuration
-WAREHOUSE_SERVICE_URL = os.environ.get("WAREHOUSE_SERVICE_URL", "http://127.0.0.1:8001")
+WAREHOUSE_SERVICE_URL = os.environ.get("WAREHOUSE_SERVICE_URL", "http://warehouse:8001")
 WAREHOUSE_SERVICE_TIMEOUT = float(os.environ.get("WAREHOUSE_SERVICE_TIMEOUT", "3.0"))
 WAREHOUSE_SERVICE_USERNAME = os.environ.get("WAREHOUSE_SERVICE_USERNAME", "")
 WAREHOUSE_SERVICE_PASSWORD = os.environ.get("WAREHOUSE_SERVICE_PASSWORD", "")
