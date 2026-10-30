@@ -1,13 +1,13 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 import pytest
 from django.urls import reverse
-from store.factories import UserFactory, CategoryFactory, BookFactory, OrderFactory
+from store.factories import BookFactory, OrderFactory, UserFactory
 from store.models import Order
 
 
 @pytest.mark.django_db
 class TestIntegrationUserFlows:
-    """Інтеграційні тести користувацьких сценаріїв із mock для Stripe та email (1-15)"""
+    """Інтеграційні тести користувацьких сценаріїв із mock для WarehouseClient, Stripe та email."""
 
     def test_flow_registration_and_login(self, client):
         # 1. Повний цикл реєстрації
@@ -54,15 +54,29 @@ class TestIntegrationUserFlows:
         assert res.status_code == 302
         assert res.url == reverse("store:book_list")
 
+    @patch("store.views.WarehouseClient")
     @patch("store.views.stripe.checkout.Session.create")
-    @patch("store.views.send_mail")
-    def test_flow_full_successful_order(self, mock_send_mail, mock_stripe, client):
-        # 7-11. Повний E2E цикл: книга -> кошик -> оформлення -> Stripe mock -> Email mock
+    @patch("store.views.send_order_confirmation_email_task.delay")
+    def test_flow_full_successful_order(
+        self, mock_celery_task, mock_stripe, mock_warehouse_cls, client
+    ):
+        # 7-11. Повний E2E цикл з моком WarehouseClient, Stripe та Celery email
+        mock_warehouse = mock_warehouse_cls.return_value
+        mock_warehouse.get_stock.return_value = {
+            "id": 1,
+            "book_id": 1,
+            "available_quantity": 10,
+        }
+        mock_warehouse.reserve_stock.return_value = {
+            "id": 100,
+            "status": "RESERVED",
+        }
+
         mock_session = MagicMock()
         mock_session.id = "cs_mock_123"
         mock_session.url = "https://checkout.stripe.com/pay/cs_mock_123"
         mock_stripe.return_value = mock_session
-        mock_send_mail.return_value = 1
+        mock_celery_task.return_value = None
 
         user = UserFactory()
         book = BookFactory(price=25.00, stock=5)
@@ -86,16 +100,23 @@ class TestIntegrationUserFlows:
         assert res.status_code in (302, 303)
         assert "stripe.com" in res.url
 
-        # Перевірка зменшення залишку товару
-        book.refresh_from_db()
-        assert book.stock == 4
+        # Перевірка виклику резервації на складі
+        mock_warehouse.reserve_stock.assert_called_once()
 
         # Перевірка замовлення в базі даних
         order = Order.objects.get(user=user)
         assert order.stripe_session_id == "cs_mock_123"
 
-    def test_flow_order_insufficient_stock(self, client):
-        # 12. Неможливість замовити товар при нульовому залишку
+    @patch("store.views.WarehouseClient")
+    def test_flow_order_insufficient_stock(self, mock_warehouse_cls, client):
+        # 12. Неможливість замовити товар при відсутності залишку на складі
+        mock_warehouse = mock_warehouse_cls.return_value
+        mock_warehouse.get_stock.return_value = {
+            "id": 1,
+            "book_id": 1,
+            "available_quantity": 0,
+        }
+
         user = UserFactory()
         book = BookFactory(stock=0)
         client.force_login(user)
@@ -124,13 +145,18 @@ class TestIntegrationUserFlows:
         assert res.status_code == 200
         assert Order.objects.count() == 0
 
-    def test_flow_payment_success_lifecycle(self, client):
-        # 14. Успішна обробка повернення з платіжної системи
+    @patch("store.views.WarehouseClient")
+    def test_flow_payment_success_lifecycle(self, mock_warehouse_cls, client):
+        # 14. Успішна обробка повернення з платіжної системи та підтвердження на складі
+        mock_warehouse = mock_warehouse_cls.return_value
+        mock_warehouse.confirm_reservation.return_value = {"status": "CONFIRMED"}
+
         order = OrderFactory(status="pending")
         res = client.get(f"{reverse('store:payment_success')}?order_id={order.id}")
         assert res.status_code == 200
         order.refresh_from_db()
         assert order.status == "paid"
+        mock_warehouse.confirm_reservation.assert_called_once_with(reservation_id=order.id)
 
     def test_flow_i18n_set_language_redirect(self, client):
         # 15. Перемикання мови через POST-запит

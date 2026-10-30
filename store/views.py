@@ -1,4 +1,5 @@
 import stripe
+from store.services.warehouse_client import WarehouseClient, WarehouseServiceError
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.contrib import messages
@@ -166,7 +167,7 @@ def cart_detail(request):
 def order_create(request):
     """
     Оформлення замовлення:
-    валідація полів адреси, перевірка на складі, збереження транзакції,
+    валідація полів адреси, перевірка та резервування на віддаленому складі (Warehouse Service),
     створення Stripe сесії та відправка email у фоновій задачі Celery.
     """
     cart = Cart(request)
@@ -189,7 +190,25 @@ def order_create(request):
             )
             return render(request, "store/order_create.html", {"cart": cart})
 
+        warehouse_client = WarehouseClient()
+
         try:
+            # 1. Мікросервісна валідація наявності товарів на складі
+            for item in cart:
+                book = item["book"]
+                quantity = item["quantity"]
+
+                stock_data = warehouse_client.get_stock(book_id=book.id)
+                if not stock_data:
+                    raise ValueError(f"Товар '{book.title}' наразі відсутній на складі.")
+
+                available = stock_data.get("available_quantity", 0)
+                if available < quantity:
+                    raise ValueError(
+                        f"Недостатньо залишку для книги '{book.title}'. Доступно: {available}, замовлено: {quantity}."
+                    )
+
+            # 2. Створення замовлення та резервації на складі
             with transaction.atomic():
                 order = Order.objects.create(
                     user=request.user,
@@ -206,13 +225,17 @@ def order_create(request):
                     book = item["book"]
                     quantity = item["quantity"]
 
-                    if book.stock < quantity:
-                        raise ValueError(
-                            f"Insufficient stock for book '{book.title}'. Available: {book.stock}."
-                        )
+                    stock_data = warehouse_client.get_stock(book_id=book.id)
+                    stock_item_id = stock_data["id"]
 
-                    book.stock -= quantity
-                    book.save()
+                    # Створюємо резервацію на складі
+                    reservation = warehouse_client.reserve_stock(
+                        stock_item_id=stock_item_id,
+                        order_id=order.id,
+                        quantity=quantity
+                    )
+                    if not reservation:
+                        raise ValueError(f"Не вдалося зарезервувати залишок для '{book.title}'.")
 
                     OrderItem.objects.create(
                         order=order, book=book, price=item["price"], quantity=quantity
@@ -247,11 +270,15 @@ def order_create(request):
                 order.stripe_session_id = checkout_session.id
                 order.save()
 
-            # Асинхронна відправка email через чергу Celery
+            # Фонова відправка email через Celery
             send_order_confirmation_email_task.delay(order.id)
 
             cart.clear()
             return redirect(checkout_session.url, code=303)
+
+        except WarehouseServiceError as err:
+            messages.error(request, f"Сервіс складу тимчасово недоступний: {err}")
+            return render(request, "store/order_create.html", {"cart": cart})
 
         except ValueError as err:
             messages.error(request, str(err))
@@ -261,19 +288,41 @@ def order_create(request):
 
 
 def payment_success(request):
-    """Обробка успішної оплати через Stripe та оновлення статусу замовлення на 'paid'."""
+    """Обробка успішної оплати через Stripe та підтвердження резервації на складі."""
     order_id = request.GET.get("order_id")
     if order_id:
         order = get_object_or_404(Order, id=order_id)
-        order.status = "paid"
-        order.save()
+        if order.status != "paid":
+            order.status = "paid"
+            order.save()
+
+            # Підтверджуємо резервацію на складі
+            warehouse_client = WarehouseClient()
+            try:
+                warehouse_client.confirm_reservation(reservation_id=order.id)
+            except WarehouseServiceError as exc:
+                messages.warning(request, f"Помилка синхронізації зі складом: {exc}")
+
     return render(request, "store/payment_success.html", {"order_id": order_id})
 
 
 def payment_cancel(request):
-    """Сторінка скасування оплати користувачем."""
-    return render(request, "store/payment_cancel.html")
+    """Обробка скасування оплати: зняття броні зі складу та зміна статусу."""
+    order_id = request.GET.get("order_id")
+    if order_id:
+        order = get_object_or_404(Order, id=order_id)
+        if order.status != "cancelled":
+            order.status = "cancelled"
+            order.save()
 
+            # Скасовуємо резервацію на складі, щоб повернути залишок у вільний продаж
+            warehouse_client = WarehouseClient()
+            try:
+                warehouse_client.cancel_reservation(reservation_id=order.id)
+            except WarehouseServiceError as exc:
+                messages.warning(request, f"Помилка скасування резерву на складі: {exc}")
+
+    return render(request, "store/payment_cancel.html")
 
 def health_check(request):
     """
