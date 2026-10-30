@@ -309,13 +309,17 @@ def payment_success(request):
             # Підтвердження резервацій на складі
             try:
                 warehouse_client = WarehouseClient()
-                # Підтверджуємо резервації безпечно
                 warehouse_client.confirm_reservation(reservation_id=order.id)
             except Exception as exc:
                 import logging
-                logging.getLogger(__name__).warning(f"Не вдалося підтвердити резервацію на складі для order {order_id}: {exc}")
+
+                logger = logging.getLogger(__name__)
+                logger.warning(
+                    f"Не вдалося підтвердити резервацію на складі для order {order_id}: {exc}"
+                )
 
     return render(request, "store/payment_success.html", {"order_id": order_id})
+
 
 def payment_cancel(request):
     """Обробка скасування оплати: зняття броні зі складу та зміна статусу."""
