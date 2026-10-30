@@ -156,7 +156,9 @@ class TestIntegrationUserFlows:
         assert res.status_code == 200
         order.refresh_from_db()
         assert order.status == "paid"
-        mock_warehouse.confirm_reservation.assert_called_once_with(reservation_id=order.id)
+        mock_warehouse.confirm_reservation.assert_called_once_with(
+            reservation_id=order.id
+        )
 
     def test_flow_i18n_set_language_redirect(self, client):
         # 15. Перемикання мови через POST-запит

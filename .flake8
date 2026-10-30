@@ -11,6 +11,7 @@ exclude =
 ignore = E203, W503
 per-file-ignores =
     bookstore/settings/*: F401, F403
+    warehouse_service/config/settings/*: F401, F403, F405
     */tests/*: F401
     */test_*.py: F401
     store/views.py: F401

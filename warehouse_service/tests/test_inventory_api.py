@@ -12,7 +12,9 @@ def api_client():
 
 @pytest.fixture
 def auth_user():
-    return User.objects.create_user(username='test_service_user', password='securepassword123')
+    return User.objects.create_user(
+        username="test_service_user", password="securepassword123"
+    )
 
 
 @pytest.fixture
@@ -23,7 +25,7 @@ def authenticated_client(api_client, auth_user):
 
 @pytest.fixture
 def warehouse():
-    return Warehouse.objects.create(name='Test Warehouse', code='WH-TEST-01')
+    return Warehouse.objects.create(name="Test Warehouse", code="WH-TEST-01")
 
 
 @pytest.fixture
@@ -31,7 +33,7 @@ def stock_item(warehouse):
     return StockItem.objects.create(
         warehouse=warehouse,
         book_id=101,
-        sku='TEST-SKU-101',
+        sku="TEST-SKU-101",
         quantity=10,
         reserved_quantity=0,
     )
@@ -41,16 +43,20 @@ def stock_item(warehouse):
 class TestInventoryAPI:
 
     def test_get_stock_items_by_book_id(self, authenticated_client, stock_item):
-        response = authenticated_client.get(f'/api/v1/inventory/items/?book_id={stock_item.book_id}')
+        response = authenticated_client.get(
+            f"/api/v1/inventory/items/?book_id={stock_item.book_id}"
+        )
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) == 1
-        assert data[0]['sku'] == stock_item.sku
-        assert data[0]['available_quantity'] == 10
+        assert data[0]["sku"] == stock_item.sku
+        assert data[0]["available_quantity"] == 10
 
     def test_reserve_stock_success(self, authenticated_client, stock_item):
-        payload = {'order_id': 5001, 'quantity': 3}
-        response = authenticated_client.post(f'/api/v1/inventory/items/{stock_item.id}/reserve/', payload)
+        payload = {"order_id": 5001, "quantity": 3}
+        response = authenticated_client.post(
+            f"/api/v1/inventory/items/{stock_item.id}/reserve/", payload
+        )
 
         assert response.status_code == status.HTTP_201_CREATED
         stock_item.refresh_from_db()
@@ -62,8 +68,10 @@ class TestInventoryAPI:
         assert reservation.quantity == 3
 
     def test_reserve_stock_insufficient(self, authenticated_client, stock_item):
-        payload = {'order_id': 5002, 'quantity': 15}
-        response = authenticated_client.post(f'/api/v1/inventory/items/{stock_item.id}/reserve/', payload)
+        payload = {"order_id": 5002, "quantity": 15}
+        response = authenticated_client.post(
+            f"/api/v1/inventory/items/{stock_item.id}/reserve/", payload
+        )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         stock_item.refresh_from_db()
@@ -75,13 +83,15 @@ class TestInventoryAPI:
             order_id=5003,
             stock_item=stock_item,
             quantity=4,
-            status=StockReservation.Status.PENDING
+            status=StockReservation.Status.PENDING,
         )
         stock_item.reserved_quantity = 4
         stock_item.save()
 
         # Підтвердження
-        response = authenticated_client.post(f'/api/v1/inventory/reservations/{reservation.id}/confirm/')
+        response = authenticated_client.post(
+            f"/api/v1/inventory/reservations/{reservation.id}/confirm/"
+        )
         assert response.status_code == status.HTTP_200_OK
 
         stock_item.refresh_from_db()
@@ -95,12 +105,14 @@ class TestInventoryAPI:
             order_id=5004,
             stock_item=stock_item,
             quantity=2,
-            status=StockReservation.Status.PENDING
+            status=StockReservation.Status.PENDING,
         )
         stock_item.reserved_quantity = 2
         stock_item.save()
 
-        response = authenticated_client.post(f'/api/v1/inventory/reservations/{reservation.id}/cancel/')
+        response = authenticated_client.post(
+            f"/api/v1/inventory/reservations/{reservation.id}/cancel/"
+        )
         assert response.status_code == status.HTTP_200_OK
 
         stock_item.refresh_from_db()

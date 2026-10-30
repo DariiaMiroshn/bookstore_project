@@ -29,14 +29,18 @@ class TestWarehouseClientAuthentication:
         assert headers["Authorization"] == "Bearer fake-jwt-access-token"
 
     @patch("store.services.warehouse_client.requests.post")
-    def test_authenticate_invalid_credentials_raises_error(self, mock_post, warehouse_client):
+    def test_authenticate_invalid_credentials_raises_error(
+        self, mock_post, warehouse_client
+    ):
         # Імітуємо помилку 401 при невірних облікових даних
         mock_response = Mock()
         mock_response.status_code = 401
         mock_response.text = "Invalid credentials"
         mock_post.return_value = mock_response
 
-        with pytest.raises(WarehouseServiceError, match="Invalid Warehouse credentials"):
+        with pytest.raises(
+            WarehouseServiceError, match="Invalid Warehouse credentials"
+        ):
             warehouse_client._authenticate()
 
 
@@ -79,7 +83,9 @@ class TestWarehouseClientOperations:
         mock_response.json.return_value = {"id": 10, "status": "RESERVED"}
         mock_request.return_value = mock_response
 
-        reservation = warehouse_client.reserve_stock(stock_item_id=1, order_id=42, quantity=2)
+        reservation = warehouse_client.reserve_stock(
+            stock_item_id=1, order_id=42, quantity=2
+        )
 
         assert reservation == {"id": 10, "status": "RESERVED"}
         mock_request.assert_called_once()
@@ -97,7 +103,9 @@ class TestWarehouseClientResilience:
             warehouse_client.get_stock(book_id=1)
 
     @patch("store.services.warehouse_client.requests.request")
-    def test_network_failure_raises_custom_exception(self, mock_request, warehouse_client):
+    def test_network_failure_raises_custom_exception(
+        self, mock_request, warehouse_client
+    ):
         warehouse_client._access_token = "valid-token"
         mock_request.side_effect = RequestException("DNS failure")
 
@@ -106,7 +114,9 @@ class TestWarehouseClientResilience:
 
     @patch("store.services.warehouse_client.requests.request")
     @patch.object(WarehouseClient, "_authenticate")
-    def test_retry_on_401_expired_token(self, mock_auth, mock_request, warehouse_client):
+    def test_retry_on_401_expired_token(
+        self, mock_auth, mock_request, warehouse_client
+    ):
         warehouse_client._access_token = "expired-token"
 
         # Перший виклик повертає 401, другий — успішний 200

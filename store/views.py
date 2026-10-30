@@ -200,7 +200,9 @@ def order_create(request):
 
                 stock_data = warehouse_client.get_stock(book_id=book.id)
                 if not stock_data:
-                    raise ValueError(f"Товар '{book.title}' наразі відсутній на складі.")
+                    raise ValueError(
+                        f"Товар '{book.title}' наразі відсутній на складі."
+                    )
 
                 available = stock_data.get("available_quantity", 0)
                 if available < quantity:
@@ -232,10 +234,12 @@ def order_create(request):
                     reservation = warehouse_client.reserve_stock(
                         stock_item_id=stock_item_id,
                         order_id=order.id,
-                        quantity=quantity
+                        quantity=quantity,
                     )
                     if not reservation:
-                        raise ValueError(f"Не вдалося зарезервувати залишок для '{book.title}'.")
+                        raise ValueError(
+                            f"Не вдалося зарезервувати залишок для '{book.title}'."
+                        )
 
                     OrderItem.objects.create(
                         order=order, book=book, price=item["price"], quantity=quantity
@@ -320,9 +324,12 @@ def payment_cancel(request):
             try:
                 warehouse_client.cancel_reservation(reservation_id=order.id)
             except WarehouseServiceError as exc:
-                messages.warning(request, f"Помилка скасування резерву на складі: {exc}")
+                messages.warning(
+                    request, f"Помилка скасування резерву на складі: {exc}"
+                )
 
     return render(request, "store/payment_cancel.html")
+
 
 def health_check(request):
     """
