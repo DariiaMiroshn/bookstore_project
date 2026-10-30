@@ -259,10 +259,14 @@ def order_create(request):
 
                 # Формування зовнішньої адреси редіректу на порт Nginx 8080
                 base_url = request.build_absolute_uri("/").rstrip("/")
-                if ("localhost" in base_url or "127.0.0.1" in base_url) and ":8080" not in base_url:
+                if (
+                    "localhost" in base_url or "127.0.0.1" in base_url
+                ) and ":8080" not in base_url:
                     base_url = "http://127.0.0.1:8080"
 
-                success_url = f"{base_url}{reverse('store:payment_success')}?order_id={order.id}"
+                success_url = (
+                    f"{base_url}{reverse('store:payment_success')}?order_id={order.id}"
+                )
                 cancel_url = f"{base_url}{reverse('store:payment_cancel')}"
 
                 checkout_session = stripe.checkout.Session.create(
